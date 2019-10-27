@@ -1,5 +1,11 @@
 import React, { Component } from 'react';
-import { StatusBar, Keyboard, ActivityIndicator } from 'react-native';
+import {
+  StatusBar,
+  Keyboard,
+  ActivityIndicator,
+  View,
+  Text,
+} from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import PropTypes from 'prop-types';
 
@@ -18,6 +24,7 @@ import {
   Bio,
   ProfileButton,
   ProfileButtonText,
+  DeleteProfile,
 } from './styles';
 
 export default class Main extends Component {
@@ -35,6 +42,7 @@ export default class Main extends Component {
     users: [],
     newUser: '',
     loading: false,
+    msgError: '',
   };
 
   async componentDidMount() {
@@ -54,30 +62,58 @@ export default class Main extends Component {
   }
 
   handleAddUser = async () => {
-    const { users, newUser } = this.state;
-    this.setState({ loading: true });
+    try {
+      const { users, newUser } = this.state;
+      this.setState({ loading: true });
 
-    const response = await api.get(`/users/${newUser}`);
+      const response = await api.get(`/users/${newUser}`);
+      const hasUser = users.find(repo => repo.name === response.data.name);
 
-    const data = {
-      name: response.data.name,
-      login: response.data.login,
-      bio: response.data.bio,
-      avatar: response.data.avatar_url,
-    };
+      if (newUser == '') {
+        throw new Error('Invalid User');
+      }
 
-    await this.setState({
-      users: [...users, data],
-      newUser: '',
-      loading: false,
-    });
-    Keyboard.dismiss();
+      if (hasUser) {
+        throw new Error(' Duplicated');
+      }
+
+      const data = {
+        name: response.data.name,
+        login: response.data.login,
+        bio: response.data.bio,
+        avatar: response.data.avatar_url,
+      };
+
+      await this.setState({
+        users: [...users, data],
+        newUser: '',
+        loading: false,
+      });
+      Keyboard.dismiss();
+    } catch (error) {
+      this.setState({
+        loading: false,
+        msgError: error.response
+          ? `User ${error.response.data.message}`
+          : `User${error.message}`,
+      });
+      alert(this.state.msgError);
+    }
   };
 
   handleNavigate = user => {
     const { navigation } = this.props;
 
     navigation.navigate('User', { user });
+  };
+
+  handleDeleteProfile = async user => {
+    alert(`Você irá deletar o usuário ${user.name}`);
+    //  const { users } = this.state;
+
+    //  const deleteUser = await users.splice(user, 1);
+
+    //  console.log(deleteUser);
   };
 
   render() {
@@ -106,15 +142,19 @@ export default class Main extends Component {
         <List
           data={users}
           keyExtractor={user => user.login}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <User>
               <Avatar source={{ uri: item.avatar }} />
               <Name>{item.name}</Name>
               <Bio>{item.bio}</Bio>
-
-              <ProfileButton onPress={() => this.handleNavigate(item)}>
-                <ProfileButtonText>Ver perfil</ProfileButtonText>
-              </ProfileButton>
+              <View style={{ flexDirection: 'row' }}>
+                <ProfileButton onPress={() => this.handleNavigate(item)}>
+                  <ProfileButtonText>Ver perfil</ProfileButtonText>
+                </ProfileButton>
+                <DeleteProfile onPress={() => this.handleDeleteProfile(item)}>
+                  <Icon name="delete-forever" size={20} color="#FFF" />
+                </DeleteProfile>
+              </View>
             </User>
           )}
         />
