@@ -74,3 +74,13 @@ export const Author = styled.Text`
   color: #666;
   margin-top: 2px;
 `;
+
+export const LoadMore = styled(RectButton)`
+  margin-top: 10px;
+  align-self: stretch;
+  border-radius: 4px;
+  background: rgba(113, 89, 193, 0.5);
+  justify-content: center;
+  align-items: center;
+  height: 36px;
+`;
